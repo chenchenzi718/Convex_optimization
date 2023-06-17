@@ -8,7 +8,7 @@ import numpy as np
 
 
 class TestFunc:
-    def __init__(self, test_func_str="Rosenbrock"):
+    def __init__(self, test_func_str="test_1"):
         self.test_func_str = test_func_str
 
         self.cons = None
@@ -19,7 +19,8 @@ class TestFunc:
         if self.test_func_str == "Rosenbrock":
             return 100.0*((input_val[1]-input_val[0]**2.0)**2.0) + (1-input_val[0])**2.0
         if self.test_func_str == "test_1":    # 返回一个f(x,y)=x^3-y^3+xy+2x^2
-            return input_val[0]**3.0 - input_val[1]**3.0 + input_val[0] * input_val[1] + 2.0 * input_val[0]**2.0
+            return 0.5 * input_val[0]**2.0 + input_val[1]**2.0 - input_val[0] * input_val[1] - 2.0 * input_val[0] - \
+                6.0 * input_val[1]
 
     # 不等式约束均为大于等于的约束
     def test_func_constraint(self):
@@ -35,9 +36,11 @@ class TestFunc:
             self.bounds = bounds
             return cons, bounds
         if self.test_func_str == "test_1":
-            cons_eq_1 = {'type': 'eq', 'fun': lambda x: x[0] * x[1] - 2}
-            cons_ineq_1 = {'type': 'ineq', 'fun': lambda x:  6. - x[0]**2 - x[1]**2,
-                           'jac': lambda x: [-2 * x[0], -2 * x[1]]}
-            cons = (cons_eq_1, cons_ineq_1)
+            cons_ineq_1 = {'type': 'ineq', 'fun': lambda x: -x[0] - x[1] + 2}
+            cons_ineq_2 = {'type': 'ineq', 'fun': lambda x: x[0] - 2.0 * x[1] + 2}
+            cons_ineq_3 = {'type': 'ineq', 'fun': lambda x: -2.0 * x[0] - x[1] + 3}
+            cons_ineq_4 = {'type': 'ineq', 'fun': lambda x: x[0]}
+            cons_ineq_5 = {'type': 'ineq', 'fun': lambda x: x[1]}
+            cons = (cons_ineq_1, cons_ineq_2, cons_ineq_3, cons_ineq_4, cons_ineq_5)
             self.cons = cons
             return cons, None
