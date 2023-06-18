@@ -41,8 +41,8 @@ class TestFunc:
             cons_ineq_5 = {'type': 'ineq', 'fun': lambda x: x[1]}
             cons = (cons_ineq_1, cons_ineq_2, cons_ineq_3, cons_ineq_4, cons_ineq_5)
             self.cons = cons
-            self.A = 0
-            self.b = 0
+            self.A = np.array([[0.]])
+            self.b = np.array(0.)
             return cons, None
         elif self.test_func_str == "test_2":
             cons_eq = {'type': 'eq', 'fun': lambda x: x[0] + x[1] - 1}
