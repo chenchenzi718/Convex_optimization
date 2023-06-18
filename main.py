@@ -7,11 +7,11 @@ from TestFuncClass import *
 from scipy.optimize import minimize
 
 if __name__ == "__main__":
-    # test_func_name 可以取 "Rosenbrock" 或者 “test_1”
-    test_func_name = "test_1"
+    # test_func_name 可以取 "test_1" 或者 “test_2” 或者 “test_3”
+    test_func_name = "test_2"
 
     # 迭代初值
-    x0 = np.array([0.5, 0.])
+    x0 = np.array([2.0, 1.0])
 
     # 建立TestFunc类，根据输入的不同测试函数选择不同的约束条件
     test_func_class = TestFunc(test_func_str=test_func_name)

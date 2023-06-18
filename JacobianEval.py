@@ -1,7 +1,7 @@
-import sympy as sy
 from TestFuncClass import *
 
 """
+    文件沿用了我在SQP算法程序中的计算方式
     本文件完成了使用符号计算直接求解一个矩阵的jacobian矩阵与hessian矩阵的过程
     并给出了将符号矩阵转化为数值的方法，在n_jacobi与n_hessian中呈现
 """
@@ -44,7 +44,7 @@ class JacobianEval:
 if __name__ == "__main__":
 
     y1, y2 = sy.symbols("y1, y2")
-    test_func = TestFunc(test_func_str="test_1").test_func_val([y1, y2])
+    test_func = TestFunc(test_func_str="test_2").test_func_val([y1, y2])
 
     # 封装成sympy的符号矩阵
     funcs = sy.Matrix([test_func])
