@@ -58,7 +58,7 @@ class TestFunc:
         elif self.test_func_str == "test_3":
             cons_eq = {'type': 'eq', 'fun': lambda x: 2.0 * x[0] + x[1] - 3}
             cons_ineq_1 = {'type': 'ineq', 'fun': lambda x: -x[0]**2 - x[1]**2 + 5}
-            cons_ineq_2 = {'type': 'ineq', 'fun': lambda x: x[0] + 2 * x[1] - 5}
+            cons_ineq_2 = {'type': 'ineq', 'fun': lambda x: x[0] + 2 * x[1] - 4}
             cons = (cons_eq, cons_ineq_1, cons_ineq_2)
             self.cons = cons
             self.A = np.array([[2.0, 1.0]])

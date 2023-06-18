@@ -4,13 +4,16 @@ from JacobianEval import *
 
 
 class MyConvexSolver:
-    def __init__(self, test_func: TestFunc, epi=1e-5):
+    def __init__(self, test_func: TestFunc, epi=1e-5, sita=1.1, beta=0.9, tao=0.05):
         self.func = test_func.test_func_val
         self.cons, self.bounds = test_func.test_func_constraint()
         # 等式约束Ax=b
         self.A = test_func.A
         self.b = test_func.b
         self.epi = epi
+        self.sita = sita
+        self.beta = beta
+        self.tao = tao
 
         # 只保留cons中的不等式约束
         self.cons = [cons for cons in self.cons if cons['type']=='ineq']
@@ -28,6 +31,10 @@ class MyConvexSolver:
         self.cons_func_jac = []
         self.cons_func_hes = []
         self.__build_sy_jacobi_hessian()
+
+        self.n = 2
+        self.m = len(self.cons_with_bounds)
+        self.p = len(self.A)
 
         # 这个变量用来记录sqp的x_k中间结果
         self.myconvex_intermedium_result = []
@@ -101,8 +108,8 @@ class MyConvexSolver:
 
     # 计算 centrality residual -diag(\lambda)f(x)-1/t I， 返回一个 m*1 矩阵 ，m为不等式约束数目
     def central_residual(self, x, _lambda, t):
-        res = -np.diag(_lambda) @ self.ineq_cons_val(x) - 1.0/t * np.eye(len(_lambda))
-        return res
+        res = -np.diag(_lambda) @ self.ineq_cons_val(x) - 1.0/t * np.ones(len(_lambda))
+        return res.reshape(-1, 1)
 
     # 计算 primal residue Ax-b
     def primal_residual(self, x):
@@ -122,9 +129,9 @@ class MyConvexSolver:
 
     # 完成 primal_dual 方法中的牛顿迭代法
     def newton_iteration(self, x, _lambda, _gamma, t):
-        n = 2
-        m = len(self.cons_with_bounds)
-        p = len(self.A)
+        n = self.n
+        m = self.m
+        p = self.p
         total_dim = n + m + p
         jac_total_res = np.zeros((total_dim, total_dim))
 
@@ -148,7 +155,57 @@ class MyConvexSolver:
         # 接下来只需求解方程组 jac_total_res @ delta_(x,lambda,gamma) = - total_res
         return np.linalg.solve(jac_total_res, -self.total_res(x, _lambda, _gamma, t))
 
+    def line_search(self, x0, _lambda, _gamma, t, delta_y):
+        alpha = 1
+        delta_x = delta_y[:self.n]
+        delta_lambda = delta_y[self.n:self.n+self.m]
+        delta_gamma = delta_y[self.n+self.m:]
+        for i in range(len(_lambda)):
+            if delta_lambda[i] < 0:
+                alpha = min(alpha, -_lambda[i]/delta_lambda[i])
+
+        alpha *= 0.99
+        x_tmp = x0 + alpha * delta_x
+        cond = self.ineq_cons_val(x_tmp) < 0
+        while False in cond:
+            alpha *= self.beta
+            x_tmp = x0 + alpha * delta_x
+            cond = self.ineq_cons_val(x_tmp) < 0
+
+        x_tmp = x0 + alpha * delta_x
+        lambda_tmp = _lambda + alpha * delta_lambda
+        gamma_tmp = _gamma + alpha * delta_gamma
+        norm_res_before = np.linalg.norm(self.total_res(x0, _lambda, _gamma, t))
+        norm_res_now = np.linalg.norm(self.total_res(x_tmp, lambda_tmp, gamma_tmp, t))
+        while norm_res_now > (1.0 - self.tao * alpha) * norm_res_before:
+            alpha *= self.beta
+            x_tmp = x0 + alpha * delta_x
+            lambda_tmp = _lambda + alpha * delta_lambda
+            gamma_tmp = _gamma + alpha * delta_gamma
+            norm_res_now = np.linalg.norm(self.total_res(x_tmp, lambda_tmp, gamma_tmp, t))
+
+        return alpha
+
     # 完成 primal-dual 内点算法
     def primal_dual_convex_algorithm(self, x0):
+        n = 2
         m = len(self.cons_with_bounds)
+        p = len(self.A)
+        _lambda = np.ones(m)
+        _gamma = np.ones(p)
 
+        epoch = 500
+        for i in range(epoch):
+            t = self.sita * m / self.surrogate_duality_gap(x0, _lambda)
+            delta_y = self.newton_iteration(x0, _lambda, _gamma, t).flatten()
+            alpha = self.line_search(x0, _lambda, _gamma, t, delta_y)
+            x0 += alpha * delta_y[:n]
+            _lambda += alpha * delta_y[n:m+n]
+            _gamma += alpha * delta_y[m+n:]
+
+            if (np.linalg.norm(self.dual_residual(x0, _lambda, _gamma)) < self.epi and
+                np.linalg.norm(self.primal_residual(x0)) < self.epi and
+                    self.surrogate_duality_gap(x0, _lambda) < self.epi):
+                break
+
+        return x0, _lambda, _gamma
