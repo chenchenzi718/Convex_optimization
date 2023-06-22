@@ -16,7 +16,7 @@ class MyConvexSolver:
         self.tao = tao
 
         # 只保留cons中的不等式约束
-        self.cons = [cons for cons in self.cons if cons['type']=='ineq']
+        self.cons = [cons for cons in self.cons if cons['type'] == 'ineq']
 
         # 将bounds转化为cons存储为列表
         if self.bounds is not None:
@@ -191,21 +191,27 @@ class MyConvexSolver:
         n = 2
         m = len(self.cons_with_bounds)
         p = len(self.A)
+        xk = x0.copy()
         _lambda = np.ones(m)
         _gamma = np.ones(p)
 
-        epoch = 500
+        self.myconvex_intermedium_result = []
+        self.myconvex_intermedium_result.append(xk.copy())
+
+        epoch = 200
         for i in range(epoch):
-            t = self.sita * m / self.surrogate_duality_gap(x0, _lambda)
-            delta_y = self.newton_iteration(x0, _lambda, _gamma, t).flatten()
-            alpha = self.line_search(x0, _lambda, _gamma, t, delta_y)
-            x0 += alpha * delta_y[:n]
+            t = self.sita * m / self.surrogate_duality_gap(xk, _lambda)
+            delta_y = self.newton_iteration(xk, _lambda, _gamma, t).flatten()
+            alpha = self.line_search(xk, _lambda, _gamma, t, delta_y)
+            xk += alpha * delta_y[:n]
             _lambda += alpha * delta_y[n:m+n]
             _gamma += alpha * delta_y[m+n:]
 
-            if (np.linalg.norm(self.dual_residual(x0, _lambda, _gamma)) < self.epi and
-                np.linalg.norm(self.primal_residual(x0)) < self.epi and
-                    self.surrogate_duality_gap(x0, _lambda) < self.epi):
+            self.myconvex_intermedium_result.append(xk.copy())
+
+            if (np.linalg.norm(self.dual_residual(xk, _lambda, _gamma)) < self.epi and
+                np.linalg.norm(self.primal_residual(xk)) < self.epi and
+                    self.surrogate_duality_gap(xk, _lambda) < self.epi):
                 break
 
-        return x0, _lambda, _gamma
+        return xk, _lambda, _gamma
