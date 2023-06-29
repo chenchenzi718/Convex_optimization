@@ -21,7 +21,6 @@ class TestFunc:
         self.b = None
 
     def test_func_val(self, input_val):
-        # define a function named Rosenbrock
         if self.test_func_str == "test_1":    # 返回一个f(x,y)=0.5x^2+y^2-xy-2x-6y
             return 0.5 * input_val[0]**2.0 + input_val[1]**2.0 - input_val[0] * input_val[1] - 2.0 * input_val[0] - \
                 6.0 * input_val[1]
@@ -34,12 +33,12 @@ class TestFunc:
     # 不等式约束均为大于等于的约束
     def test_func_constraint(self):
         if self.test_func_str == "test_1":
-            cons_ineq_1 = {'type': 'eq', 'fun': lambda x: -x[0] - x[1] + 2}
+            cons_eq_1 = {'type': 'eq', 'fun': lambda x: -x[0] - x[1] + 2}
             cons_ineq_2 = {'type': 'ineq', 'fun': lambda x: x[0] - 2.0 * x[1] + 2}
             cons_ineq_3 = {'type': 'ineq', 'fun': lambda x: -2.0 * x[0] - x[1] + 3}
             cons_ineq_4 = {'type': 'ineq', 'fun': lambda x: x[0]}
             cons_ineq_5 = {'type': 'ineq', 'fun': lambda x: x[1]}
-            cons = (cons_ineq_1, cons_ineq_2, cons_ineq_3, cons_ineq_4, cons_ineq_5)
+            cons = (cons_eq_1, cons_ineq_2, cons_ineq_3, cons_ineq_4, cons_ineq_5)
             self.cons = cons
             self.A = np.array([[1., 1.]])
             self.b = np.array(2.)

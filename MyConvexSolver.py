@@ -4,16 +4,17 @@ from JacobianEval import *
 
 
 class MyConvexSolver:
-    def __init__(self, test_func: TestFunc, epi=1e-5, sita=1.1, beta=0.9, tao=0.05):
+    def __init__(self, test_func: TestFunc, epi_feas=1e-5, epi=1e-5, sita=16.0, beta=0.9, tao=0.05):
         self.func = test_func.test_func_val
         self.cons, self.bounds = test_func.test_func_constraint()
         # 等式约束Ax=b
         self.A = test_func.A
         self.b = test_func.b
-        self.epi = epi
-        self.sita = sita
-        self.beta = beta
-        self.tao = tao
+        self.epi = epi  # 用来作为surrogate终止条件
+        self.epi_feas = epi_feas  # 用来作为dual,primal误差迭代终止条件
+        self.sita = sita  # 用来进行t=sita*(m/gamma)
+        self.beta = beta  # 用来进行line search 的 backtracking
+        self.tao = tao   # 也是用来进行 line search 的参数
 
         # 只保留cons中的不等式约束
         self.cons = [cons for cons in self.cons if cons['type'] == 'ineq']
@@ -36,7 +37,7 @@ class MyConvexSolver:
         self.m = len(self.cons_with_bounds)
         self.p = len(self.A)
 
-        # 这个变量用来记录sqp的x_k中间结果
+        # 这个变量用来记录convex算法的x_k中间结果
         self.myconvex_intermedium_result = []
 
     # 给出需要计算的函数以及 不等式约束函数 的jacobi的符号计算结果
@@ -195,22 +196,29 @@ class MyConvexSolver:
         _lambda = np.ones(m)
         _gamma = np.ones(p)
 
+        # 记录中间迭代结果
         self.myconvex_intermedium_result = []
         self.myconvex_intermedium_result.append(xk.copy())
 
         epoch = 200
         for i in range(epoch):
             t = self.sita * m / self.surrogate_duality_gap(xk, _lambda)
+
+            # 进行newton迭代求解
             delta_y = self.newton_iteration(xk, _lambda, _gamma, t).flatten()
+
+            # 进行迭代步确定
             alpha = self.line_search(xk, _lambda, _gamma, t, delta_y)
+
             xk += alpha * delta_y[:n]
             _lambda += alpha * delta_y[n:m+n]
             _gamma += alpha * delta_y[m+n:]
 
             self.myconvex_intermedium_result.append(xk.copy())
 
-            if (np.linalg.norm(self.dual_residual(xk, _lambda, _gamma)) < self.epi and
-                np.linalg.norm(self.primal_residual(xk)) < self.epi and
+            #  如果满足收敛条件，则退出循环
+            if (np.linalg.norm(self.dual_residual(xk, _lambda, _gamma)) < self.epi_feas and
+                np.linalg.norm(self.primal_residual(xk)) < self.epi_feas and
                     self.surrogate_duality_gap(xk, _lambda) < self.epi):
                 break
 

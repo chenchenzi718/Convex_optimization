@@ -47,7 +47,7 @@ def pic_my_convex(func_class: TestFunc, actual_x, my_convex_medium_x, test_func_
     # 在图上画出最终收敛点
     plt.scatter(actual_x[0], actual_x[1], marker="*", c="y", s=100)
 
-    # 在图上画出在sqp迭代过程中的点
+    # 在图上画出在内点算法迭代过程中的点
     plt_x = []
     plt_y = []
     for _array in my_convex_medium_x:
@@ -73,8 +73,10 @@ class MyConvexUI(QMainWindow, Ui_MyResult):
             x0 = np.array([0.1, 0.1])
         elif test_func_str == "test_2":
             x0 = np.array([0.1, 1.0])
-        else:
+        elif test_func_str == "test_3":
             x0 = np.array([0.9, 2.0])
+        else:
+            x0 = np.array([0., 0.])
 
         # 建立TestFunc类，根据输入的不同测试函数选择不同的约束条件
         test_func_class = TestFunc(test_func_str=test_func_str)
@@ -111,7 +113,7 @@ if __name__ == "__main__":
 
     use_ui = True
 
-    # 如果要使用ui，如果跑不起来，可以修改use_ui为False进行测试
+    # 如果要使用ui，如果出现没安装pyqt跑不起来，可以修改 use_ui 为False进行测试
     if use_ui:
         app = QtWidgets.QApplication(sys.argv)
         MainWindow = MyConvexUI()  # 创建PyQt设计的窗体对象
@@ -119,7 +121,7 @@ if __name__ == "__main__":
         sys.exit(app.exec_())  # 程序关闭时退出进程
     else:
         # test_func_name 可以取 "test_1" 或者 “test_2” 或者 “test_3”
-        test_func_name = "test_1"
+        test_func_name = "test_3"
 
         # 迭代初值
         x0 = np.array([0., 0.])
@@ -140,10 +142,12 @@ if __name__ == "__main__":
         print(f"result of optimize.minimize function:{res.x}")
         print(f"val of optimize.minimize function:{res.fun}")
 
+        # 使用我编写的primal-dual 内点法计算结果
         solver = MyConvexSolver(test_func_class)
         x1, _lambda, _gamma = solver.primal_dual_convex_algorithm(x0)
         print(f"result of my convex solver:{x1}")
         print(f"val of my convex solver function:{test_func(x1)}")
+        print(f"the iteration num:{len(solver.myconvex_intermedium_result)-1}")
 
         # 仅画出在x0条件下上述迭代的图示
         plt = pic_my_convex(test_func_class, res.x, solver.myconvex_intermedium_result, test_func_name=test_func_name)
